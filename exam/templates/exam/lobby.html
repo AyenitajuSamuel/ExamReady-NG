@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Exam Lobby{% endblock %}
+
+{% block content %}
+<h1>Start an Exam</h1>
+<p>Choose an exam type below to begin.</p>
+
+<form method="post" action="{% url 'start_exam' %}">
+  {% csrf_token %}
+
+  <!-- Exam Type -->
+  <fieldset>
+    <legend><strong>Exam Type</strong></legend>
+
+    <label>
+      <input type="radio" name="exam_type" value="quick_test" required>
+      <strong>Quick Test</strong> — 15 random questions, no time limit
+    </label><br>
+
+    <label>
+      <input type="radio" name="exam_type" value="timed_exam">
+      <strong>Timed Exam</strong> — 40 questions, 60 minute countdown
+    </label><br>
+
+    <label>
+      <input type="radio" name="exam_type" value="practice_topic">
+      <strong>Practice by Topic</strong> — Pick a subject &amp; topic, see answers as you go
+    </label><br>
+
+    <label>
+      <input type="radio" name="exam_type" value="weakness_drill">
+      <strong>Weakness Drill</strong> — Revisit questions you've previously got wrong
+    </label>
+  </fieldset>
+
+  <br>
+
+  <!-- Subject (optional for quick test / weakness drill) -->
+  <fieldset id="subject-section">
+    <legend><strong>Subject</strong> <small>(optional for Quick Test &amp; Weakness Drill)</small></legend>
+    <select name="subject_id">
+      <option value="">— All subjects —</option>
+      {% for subject in subjects %}
+        <option value="{{ subject.id }}">{{ subject.name }}</option>
+      {% endfor %}
+    </select>
+  </fieldset>
+
+  <br>
+
+  <!-- Topic (only for Practice by Topic) -->
+  <fieldset id="topic-section" style="display:none;">
+    <legend><strong>Topic</strong> <small>(required for Practice by Topic)</small></legend>
+    <select name="topic_id" id="topic-select">
+      <option value="">— Select a subject first —</option>
+    </select>
+  </fieldset>
+
+  <br>
+  <button type="submit">Start Exam &rarr;</button>
+</form>
+
+<hr>
+<a href="{% url 'exam_history' %}">View my past results</a>
+
+{{ subjects_json|json_script:"subjects-data" }}
+<script>
+  const subjectData = JSON.parse(document.getElementById("subjects-data").textContent);
+  const subjectTopics = {};
+  subjectData.forEach(s => { subjectTopics[s.id] = s.topics; });
+
+  const examTypeRadios = document.querySelectorAll('input[name="exam_type"]');
+  const topicSection   = document.getElementById("topic-section");
+  const subjectSelect  = document.querySelector('select[name="subject_id"]');
+  const topicSelect    = document.getElementById("topic-select");
+
+  function toggleTopicSection() {
+    const selected = document.querySelector('input[name="exam_type"]:checked');
+    topicSection.style.display = selected && selected.value === "practice_topic" ? "" : "none";
+  }
+
+  function updateTopics() {
+    const subjectId = subjectSelect.value;
+    topicSelect.innerHTML = '<option value="">— All topics —</option>';
+    if (subjectId && subjectTopics[subjectId]) {
+      subjectTopics[subjectId].forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.name;
+        topicSelect.appendChild(opt);
+      });
+    }
+  }
+
+  examTypeRadios.forEach(r => r.addEventListener("change", toggleTopicSection));
+  subjectSelect.addEventListener("change", updateTopics);
+</script>
+{% endblock %}

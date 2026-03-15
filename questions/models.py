@@ -1,20 +1,24 @@
 from django.db import models
 
-from django.db import models
-
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-    
+
+
 class Topic(models.Model):
     subject = models.ForeignKey(
         Subject,
         on_delete=models.CASCADE,
         related_name="topics"
     )
+    name = models.CharField(max_length=100, default="General")
+
+    def __str__(self):
+        return self.name
+
 
 class Question(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
@@ -24,6 +28,7 @@ class Question(models.Model):
 
     def __str__(self):
         return self.question_text
+
 
 class Choice(models.Model):
     question = models.ForeignKey(
@@ -42,12 +47,10 @@ class Choice(models.Model):
 
 
 class Explanation(models.Model):
-
     question = models.OneToOneField(
         Question,
         on_delete=models.CASCADE
     )
-
     explanation_text = models.TextField()
 
     def __str__(self):

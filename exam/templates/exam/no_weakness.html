@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No Weaknesses Found{% endblock %}
+
+{% block content %}
+<h1>No Weaknesses Found</h1>
+<p>Great news — you haven't got any questions wrong yet, or you haven't taken any exams.</p>
+<p>Complete a Quick Test or Timed Exam first, then come back for a Weakness Drill.</p>
+<a href="{% url 'exam_lobby' %}">Back to Lobby</a>
+{% endblock %}

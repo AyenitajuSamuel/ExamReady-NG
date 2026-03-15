@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Results{% endblock %}
+
+{% block content %}
+
+<h1>
+  {% if session.passed %}
+    ✓ Passed!
+  {% else %}
+    ✗ Failed
+  {% endif %}
+</h1>
+
+<p><strong>Exam type:</strong> {{ session.get_exam_type_display }}</p>
+{% if session.subject %}<p><strong>Subject:</strong> {{ session.subject }}</p>{% endif %}
+<p><strong>Score:</strong> {{ session.score_percent }}%</p>
+<p><strong>Correct:</strong> {{ session.correct_answers }} / {{ session.total_questions }}</p>
+<p><strong>Pass mark:</strong> {{ session.pass_mark }}%</p>
+
+{% if session.time_taken_seconds %}
+  <p>
+    <strong>Time taken:</strong>
+    {% with t=session.time_taken_seconds %}
+      {% if t >= 3600 %}{{ t|divisibleby:3600 }}h {% endif %}
+      {{ t|floatformat:0 }}
+      — calculated properly in template tag or view if needed
+    {% endwith %}
+  </p>
+{% endif %}
+
+<hr>
+
+<h2>Question Breakdown</h2>
+<ol>
+  {% for eq in exam_questions %}
+    <li>
+      {{ eq.question.question_text|truncatechars:80 }}
+      {% if eq.is_correct %}
+        — <strong>✓ Correct</strong>
+      {% elif eq.answered %}
+        — <strong>✗ Wrong</strong>
+        (your answer: {{ eq.selected_choice.option_text }})
+      {% else %}
+        — <em>Not answered</em>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ol>
+
+<hr>
+<a href="{% url 'exam_lobby' %}">Start another exam</a>
+&nbsp;|&nbsp;
+<a href="{% url 'exam_history' %}">View all results</a>
+
+{% endblock %}
