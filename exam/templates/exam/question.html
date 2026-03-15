@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Question {{ exam_q.order }} of {{ total }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<p>
+  <strong>{{ session.get_exam_type_display }}</strong>
+  {% if session.subject %} &mdash; {{ session.subject }}{% endif %}
+</p>
+<p>Question {{ exam_q.order }} of {{ total }}</p>
+<progress value="{{ progress }}" max="100"></progress> {{ progress }}%
+
+<!-- Countdown (Timed Exam only) -->
+{% if session.exam_type == "timed_exam" %}
+  <p>Time remaining: <strong id="countdown"></strong></p>
+  {{ session.started_at|date:"c"|json_script:"started-at" }}
+  {{ session.duration_seconds|json_script:"duration-seconds" }}
+  <script>
+    (function () {
+      const startedAt  = new Date(JSON.parse(document.getElementById("started-at").textContent));
+      const durationMs = JSON.parse(document.getElementById("duration-seconds").textContent) * 1000;
+      const endsAt     = new Date(startedAt.getTime() + durationMs);
+
+      function tick() {
+        const remaining = Math.max(0, endsAt - Date.now());
+        const mins = String(Math.floor(remaining / 60000)).padStart(2, "0");
+        const secs = String(Math.floor((remaining % 60000) / 1000)).padStart(2, "0");
+        document.getElementById("countdown").textContent = mins + ":" + secs;
+        if (remaining === 0) {
+          document.getElementById("abandon-form").submit();
+        }
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+{% endif %}
+
+<hr>
+
+<!-- Question -->
+<h2>{{ exam_q.question.question_text }}</h2>
+
+<!-- Answer form -->
+<form method="post" action="{% url 'submit_answer' session.id %}">
+  {% csrf_token %}
+  <input type="hidden" name="exam_question_id" value="{{ exam_q.id }}">
+
+  {% for choice in choices %}
+    <div>
+      <label>
+        <input type="radio" name="choice_id" value="{{ choice.id }}" required>
+        {{ choice.option_text }}
+      </label>
+    </div>
+  {% endfor %}
+
+  <br>
+  <button type="submit">
+    {% if reveal_now %}Submit &amp; See Answer{% else %}Submit{% endif %}
+  </button>
+</form>
+
+<hr>
+
+<!-- Abandon -->
+<form id="abandon-form" method="post" action="{% url 'abandon_exam' session.id %}"
+      onsubmit="return confirm('Are you sure you want to abandon this exam?');">
+  {% csrf_token %}
+  <button type="submit">Abandon Exam</button>
+</form>
+
+{% endblock %}

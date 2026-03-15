@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Answer{% endblock %}
+
+{% block content %}
+
+<p><strong>{{ session.get_exam_type_display }}</strong></p>
+
+<h2>{{ question.question_text }}</h2>
+
+{% if is_correct %}
+  <p><strong>✓ Correct!</strong></p>
+{% else %}
+  <p><strong>✗ Incorrect.</strong></p>
+  <p>Your answer: {{ selected.option_text }}</p>
+  <p>Correct answer: {{ correct_choice.option_text }}</p>
+{% endif %}
+
+<!-- All choices with correct highlighted -->
+<ul>
+  {% for choice in question.choices.all %}
+    <li>
+      {% if choice.is_correct %}
+        <strong>[CORRECT] {{ choice.option_text }}</strong>
+      {% elif choice == selected and not is_correct %}
+        <s>{{ choice.option_text }}</s> &larr; your answer
+      {% else %}
+        {{ choice.option_text }}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+{% if explanation %}
+  <hr>
+  <h3>Explanation</h3>
+  <p>{{ explanation }}</p>
+{% endif %}
+
+<hr>
+<a href="{% url 'exam_question' session.id %}">
+  Next Question &rarr;
+</a>
+
+{% endblock %}

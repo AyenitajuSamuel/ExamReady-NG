@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No Questions Available{% endblock %}
+
+{% block content %}
+<h1>No Questions Available</h1>
+<p>There are no questions in the database yet for <strong>{{ exam_type }}</strong>.</p>
+<p>Ask your admin to import questions before starting an exam.</p>
+<a href="{% url 'exam_lobby' %}">Back to Lobby</a>
+{% endblock %}

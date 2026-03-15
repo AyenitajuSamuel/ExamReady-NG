@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Exam History{% endblock %}
+
+{% block content %}
+<h1>My Exam History</h1>
+
+{% if sessions %}
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Subject</th>
+        <th>Score</th>
+        <th>Result</th>
+        <th>Time Taken</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for session in sessions %}
+        <tr>
+          <td>{{ session.started_at|date:"d M Y" }}</td>
+          <td>{{ session.get_exam_type_display }}</td>
+          <td>{{ session.subject|default:"—" }}</td>
+          <td>{{ session.score_percent }}%</td>
+          <td>{% if session.passed %}✓ Pass{% else %}✗ Fail{% endif %}</td>
+          <td>
+            {% if session.time_taken_seconds %}
+              {{ session.time_taken_seconds }}s
+            {% else %}—{% endif %}
+          </td>
+          <td><a href="{% url 'exam_complete' session.id %}">Review</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>You haven't completed any exams yet. <a href="{% url 'exam_lobby' %}">Start one now</a>.</p>
+{% endif %}
+
+{% endblock %}
