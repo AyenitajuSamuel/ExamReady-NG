@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+{% if user.is_authenticated %}
+
+  <h1>Welcome back, {{ user.username }}!</h1>
+
+  <!-- Quick Stats -->
+  <section>
+    <h2>Your Stats</h2>
+    <p>Total exams completed: <strong>{{ total_exams }}</strong></p>
+    <p>Total passed: <strong>{{ total_passed }}</strong></p>
+    {% if total_exams > 0 %}
+      <p>Pass rate: <strong>{{ total_passed }} / {{ total_exams }}</strong></p>
+    {% endif %}
+  </section>
+
+  <hr>
+
+  <!-- Actions -->
+  <section>
+    <h2>What would you like to do?</h2>
+    <ul>
+      <li><a href="/exam/">Start an Exam</a> — Quick Test, Timed Exam, Practice by Topic, or Weakness Drill</li>
+      <li><a href="/exam/history/">View Exam History</a> — See all your past results</li>
+      <li><a href="/users/profile/">My Profile</a> — Update your bio and avatar</li>
+    </ul>
+  </section>
+
+  <hr>
+
+  <!-- Recent Results -->
+  {% if recent_sessions %}
+    <section>
+      <h2>Recent Results</h2>
+      <table border="1" cellpadding="6">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Subject</th>
+            <th>Score</th>
+            <th>Result</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in recent_sessions %}
+            <tr>
+              <td>{{ session.started_at|date:"d M Y" }}</td>
+              <td>{{ session.get_exam_type_display }}</td>
+              <td>{{ session.subject|default:"—" }}</td>
+              <td>{{ session.score_percent }}%</td>
+              <td>{% if session.passed %}✓ Pass{% else %}✗ Fail{% endif %}</td>
+              <td><a href="/exam/{{ session.id }}/complete/">Review</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p><a href="/exam/history/">View all results &rarr;</a></p>
+    </section>
+  {% else %}
+    <p>You haven't completed any exams yet. <a href="/exam/">Start one now &rarr;</a></p>
+  {% endif %}
+
+  <!-- Available Subjects -->
+  {% if subjects %}
+    <hr>
+    <section>
+      <h2>Available Subjects</h2>
+      <ul>
+        {% for subject in subjects %}
+          <li>{{ subject.name }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% else %}
+
+  <!-- Guest landing -->
+  <h1>Welcome to ExamReady</h1>
+  <p>Prepare smarter for your exams with past questions, timed practice, and personalised drills.</p>
+
+  <p>
+    <a href="/users/register/">Create an account</a>
+    &nbsp;|&nbsp;
+    <a href="/users/login/">Log in</a>
+  </p>
+
+  <hr>
+
+  <h2>What you can do</h2>
+  <ul>
+    <li><strong>Quick Test</strong> — 15 random questions to warm up</li>
+    <li><strong>Timed Exam</strong> — Full exam simulation with a countdown timer</li>
+    <li><strong>Practice by Topic</strong> — Focus on a specific subject and topic</li>
+    <li><strong>Weakness Drill</strong> — Revisit questions you've previously got wrong</li>
+  </ul>
+
+{% endif %}
+
+{% endblock %}

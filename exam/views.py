@@ -10,7 +10,7 @@ from questions.models import Choice, Question, Subject, Topic
 from .models import ExamQuestion, ExamSession
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+#Helpers
 
 def _build_session(user, exam_type, questions_qs, subject=None, topic=None,
                    duration_seconds=None, pass_mark=50):
@@ -40,7 +40,7 @@ def _reveal_immediately(exam_type):
                          ExamSession.ExamType.WEAKNESS_DRILL)
 
 
-# ── Lobby ─────────────────────────────────────────────────────────────────────
+#Lobby
 
 @login_required
 def lobby(request):
@@ -59,17 +59,17 @@ def lobby(request):
     })
 
 
-# ── Start Exam ────────────────────────────────────────────────────────────────
+#Start Exam
 
 @login_required
 @require_POST
 def start_exam(request):
-    exam_type = request.POST.get("exam_type")
+    exam_type  = request.POST.get("exam_type") or ExamSession.ExamType.QUICK_TEST
     subject_id = request.POST.get("subject_id")
     topic_id   = request.POST.get("topic_id")
 
-    subject = get_object_or_404(Subject, pk=subject_id) if subject_id else None
-    topic   = get_object_or_404(Topic,   pk=topic_id)   if topic_id   else None
+    subject = Subject.objects.filter(pk=subject_id).first() if subject_id else None
+    topic   = Topic.objects.filter(pk=topic_id).first()     if topic_id   else None
 
     base_qs = Question.objects.prefetch_related("choices")
     if subject:
@@ -119,7 +119,7 @@ def start_exam(request):
     return redirect("exam_question", session_id=session.id)
 
 
-# ── Question View ─────────────────────────────────────────────────────────────
+#Question View
 
 @login_required
 def exam_question(request, session_id):
@@ -149,7 +149,7 @@ def exam_question(request, session_id):
     })
 
 
-# ── Submit Answer ─────────────────────────────────────────────────────────────
+#Submit Answer
 
 @login_required
 @require_POST
@@ -189,7 +189,7 @@ def submit_answer(request, session_id):
     return redirect("exam_question", session_id=session.id)
 
 
-# ── Abandon ───────────────────────────────────────────────────────────────────
+#Abandon
 
 @login_required
 @require_POST
@@ -201,7 +201,7 @@ def abandon_exam(request, session_id):
     return redirect("exam_lobby")
 
 
-# ── Complete ──────────────────────────────────────────────────────────────────
+#Complete
 
 @login_required
 def exam_complete(request, session_id):
@@ -224,7 +224,7 @@ def exam_complete(request, session_id):
     })
 
 
-# ── History ───────────────────────────────────────────────────────────────────
+#History
 
 @login_required
 def exam_history(request):
