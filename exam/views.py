@@ -10,7 +10,7 @@ from questions.models import Choice, Question, Subject, Topic
 from .models import ExamQuestion, ExamSession
 
 
-# Helpers
+#Helpers
 
 def _build_session(user, exam_type, questions_qs, subject=None, topic=None,
                    duration_seconds=None, pass_mark=50):
@@ -40,17 +40,7 @@ def _reveal_immediately(exam_type):
                          ExamSession.ExamType.WEAKNESS_DRILL)
 
 
-def _get_profile_subjects(user):
-    """Return the queryset of subjects the user has selected, or None if incomplete."""
-    try:
-        profile = user.profile
-    except Exception:
-        return None
-    subjects = profile.subjects.all()
-    return subjects if subjects.count() == 4 else None
-
-
-# Lobby
+#Lobby
 
 @login_required
 def lobby(request):
@@ -74,25 +64,17 @@ def lobby(request):
     })
 
 
-# Start Exam
+#Start Exam
 
 @login_required
 @require_POST
 def start_exam(request):
-    # Guard: user must have selected exactly 4 subjects
-    profile_subjects = _get_profile_subjects(request.user)
-    if profile_subjects is None:
-        return redirect("select_subjects")
-
     exam_type  = request.POST.get("exam_type") or ExamSession.ExamType.QUICK_TEST
     subject_id = request.POST.get("subject_id")
     topic_id   = request.POST.get("topic_id")
 
-    subject = (
-        profile_subjects.filter(pk=subject_id).first()
-        if subject_id else None
-    )
-    topic = Topic.objects.filter(pk=topic_id).first() if topic_id else None
+    subject = Subject.objects.filter(pk=subject_id).first() if subject_id else None
+    topic   = Topic.objects.filter(pk=topic_id).first()     if topic_id   else None
 
     base_qs = (
         Question.objects
@@ -220,7 +202,7 @@ def submit_answer(request, session_id):
     return redirect("exam_question", session_id=session.id)
 
 
-# Abandon
+#Abandon
 
 @login_required
 @require_POST
@@ -230,6 +212,9 @@ def abandon_exam(request, session_id):
     session.completed_at = timezone.now()
     session.save()
     return redirect("exam_lobby")
+
+
+#Complete
 
 @login_required
 def exam_complete(request, session_id):
@@ -252,7 +237,7 @@ def exam_complete(request, session_id):
     })
 
 
-# History
+#History
 
 @login_required
 def exam_history(request):
