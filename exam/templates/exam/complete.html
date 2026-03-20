@@ -1,55 +1,130 @@
 {% extends "base.html" %}
-{% block title %}Results{% endblock %}
+{% load static %}
+{% block title %}Results — ExamReady{% endblock %}
+{% block tab_history %}er-tabbar__item--active{% endblock %}
 
 {% block content %}
+<div class="er-page">
 
-<h1>
-  {% if session.passed %}
-    ✓ Passed!
-  {% else %}
-    ✗ Failed
-  {% endif %}
-</h1>
+  <!-- Score ring -->
+  <div class="results-header">
+    <div class="score-ring-wrap">
+      {% with pct=session.score_percent|default:0 %}
+      {% comment %}
+        SVG circle: r=65, circumference = 2π×65 ≈ 408.4
+        stroke-dasharray="408.4"
+        stroke-dashoffset = 408.4 × (1 - pct/100)
+      {% endcomment %}
+      <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+        <circle class="score-ring-bg" cx="80" cy="80" r="65"/>
+        <circle class="score-ring-fill {% if session.passed %}score-ring-fill--pass{% else %}score-ring-fill--fail{% endif %}"
+          cx="80" cy="80" r="65"
+          stroke-dasharray="408.4"
+          stroke-dashoffset="{{ session.score_percent|default:0|floatformat:0 }}"
+          id="score-ring"
+        />
+      </svg>
+      {% endwith %}
+      <div class="score-ring-text">
+        <span class="score-ring-text__val">{{ session.score_percent|default:0|floatformat:0 }}</span>
+        <span class="score-ring-text__sub">out of 100</span>
+      </div>
+    </div>
 
-<p><strong>Exam type:</strong> {{ session.get_exam_type_display }}</p>
-{% if session.subject %}<p><strong>Subject:</strong> {{ session.subject }}</p>{% endif %}
-<p><strong>Score:</strong> {{ session.score_percent }}%</p>
-<p><strong>Correct:</strong> {{ session.correct_answers }} / {{ session.total_questions }}</p>
-<p><strong>Pass mark:</strong> {{ session.pass_mark }}%</p>
-
-{% if session.time_taken_seconds %}
-  <p>
-    <strong>Time taken:</strong>
-    {% with t=session.time_taken_seconds %}
-      {% if t >= 3600 %}{{ t|divisibleby:3600 }}h {% endif %}
-      {{ t|floatformat:0 }}
-      — calculated properly in template tag or view if needed
-    {% endwith %}
-  </p>
-{% endif %}
-
-<hr>
-
-<h2>Question Breakdown</h2>
-<ol>
-  {% for eq in exam_questions %}
-    <li>
-      {{ eq.question.question_text|truncatechars:80 }}
-      {% if eq.is_correct %}
-        — <strong>✓ Correct</strong>
-      {% elif eq.answered %}
-        — <strong>✗ Wrong</strong>
-        (your answer: {{ eq.selected_choice.option_text }})
+    <p class="results-verdict">
+      {% if session.passed %}Great job, {{ user.username }}!{% else %}Keep going, {{ user.username }}!{% endif %}
+    </p>
+    <p class="results-verdict-sub">
+      {% if session.passed %}
+        You passed this exam.
       {% else %}
-        — <em>Not answered</em>
+        You didn't pass this time — keep practising.
       {% endif %}
-    </li>
-  {% endfor %}
-</ol>
+    </p>
+  </div>
 
-<hr>
-<a href="{% url 'exam_lobby' %}">Start another exam</a>
-&nbsp;|&nbsp;
-<a href="{% url 'exam_history' %}">View all results</a>
+  <!-- Stats tiles -->
+  <div class="results-stats">
+    <div class="er-card results-stat">
+      <div class="results-stat__label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Time spent
+      </div>
+      <div class="results-stat__val">
+        {% if session.time_taken_seconds %}
+          {% with t=session.time_taken_seconds %}
+            {% if t >= 3600 %}{{ t|divisibleby:3600 }}h {% endif %}
+            {% widthratio t|add:0 60 1 %}m
+          {% endwith %}
+        {% else %}—{% endif %}
+      </div>
+    </div>
+    <div class="er-card results-stat">
+      <div class="results-stat__label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Accuracy
+      </div>
+      <div class="results-stat__val {% if session.passed %}results-stat__val--pass{% else %}results-stat__val--fail{% endif %}">
+        {{ session.score_percent|default:0|floatformat:0 }}%
+      </div>
+    </div>
+    <div class="er-card results-stat">
+      <div class="results-stat__label">Correct</div>
+      <div class="results-stat__val">{{ session.correct_answers }}/{{ session.total_questions }}</div>
+    </div>
+    <div class="er-card results-stat">
+      <div class="results-stat__label">Pass mark</div>
+      <div class="results-stat__val">{{ session.pass_mark }}%</div>
+    </div>
+  </div>
 
+  <!-- Question breakdown -->
+  <p class="er-section-title">Topic-wise Breakdown</p>
+  <div class="er-card" style="margin-bottom:16px;">
+    {% for eq in exam_questions %}
+    <div class="breakdown-item">
+      <div class="breakdown-item__icon
+        {% if eq.is_correct %}breakdown-item__icon--correct
+        {% elif eq.answered %}breakdown-item__icon--wrong
+        {% else %}breakdown-item__icon--skip{% endif %}">
+        {% if eq.is_correct %}✓{% elif eq.answered %}✗{% else %}—{% endif %}
+      </div>
+      <div>
+        <div class="breakdown-item__text">{{ eq.question.question_text|truncatechars:80 }}</div>
+        {% if not eq.is_correct and eq.answered %}
+        <div class="breakdown-item__answer">Your answer: {{ eq.selected_choice.option_text|truncatechars:50 }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Action buttons -->
+  <div class="results-actions">
+    <a href="{% url 'exam_lobby' %}" class="er-btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      Start another exam
+    </a>
+    <a href="{% url 'exam_history' %}" class="er-btn-secondary">View all results</a>
+  </div>
+
+</div>
+
+<script>
+  // Animate the score ring on load
+  document.addEventListener('DOMContentLoaded', function () {
+    const ring = document.getElementById('score-ring');
+    const pct  = {{ session.score_percent|default:0|floatformat:0 }};
+    const circ = 408.4;
+    const offset = circ * (1 - pct / 100);
+    // Start fully hidden, animate to correct value
+    ring.style.strokeDashoffset = circ;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ring.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)';
+        ring.style.strokeDashoffset = offset;
+      });
+    });
+  });
+</script>
 {% endblock %}

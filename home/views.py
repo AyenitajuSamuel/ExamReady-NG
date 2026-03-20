@@ -1,11 +1,13 @@
 from django.shortcuts import render
 from questions.models import Subject
-from exam.models import ExamSession
+from exam.models import ExamSession, ExamQuestion
 from recommendations.engine import get_recommendations
 
 
 def home(request):
-    context = {}
+    context = {
+        "exam_type_list": ["Quick Test", "Timed Exam", "Practice by Topic", "Weakness Drill"],
+    }
 
     if request.user.is_authenticated:
         all_sessions = ExamSession.objects.filter(
@@ -15,12 +17,19 @@ def home(request):
         total_exams     = all_sessions.count()
         total_passed    = all_sessions.filter(passed=True).count()
 
+        # Overall readiness = accuracy across all answered questions
+        answered  = ExamQuestion.objects.filter(session__user=request.user, answered=True)
+        total_q   = answered.count()
+        correct_q = answered.filter(is_correct=True).count()
+        readiness_pct = round(correct_q / total_q * 100) if total_q else None
+
         context.update({
             "recent_sessions": recent_sessions,
             "total_exams":     total_exams,
             "total_passed":    total_passed,
             "subjects":        Subject.objects.all(),
             "top_recs":        get_recommendations(request.user)[:3],
+            "readiness_pct":   readiness_pct,
         })
 
     return render(request, "home/home.html", context)

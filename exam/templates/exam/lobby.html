@@ -1,108 +1,178 @@
 {% extends "base.html" %}
-{% block title %}Exam Lobby{% endblock %}
+{% load static %}
+{% block title %}Start Exam — ExamReady{% endblock %}
+{% block tab_exams %}er-tabbar__item--active{% endblock %}
 
 {% block content %}
-<h1>Start an Exam</h1>
+<div class="er-page">
 
-{% if subjects_incomplete %}
-  <p style="color: red;">
-    <strong>You haven't selected your 4 JAMB subjects yet.</strong>
-    Please <a href="{% url 'select_subjects' %}">select your subjects</a> before starting an exam.
-  </p>
-{% else %}
+  {% if subjects_incomplete %}
+  <div class="er-message er-message--error" style="margin-top:16px;">
+    Select your 4 JAMB subjects first.
+    <a href="{% url 'select_subjects' %}" style="font-weight:600;color:var(--red-500);text-decoration:underline;margin-left:4px;">Go →</a>
+  </div>
+  {% else %}
 
-<p>Choose an exam type below to begin.</p>
+  <form method="post" action="{% url 'start_exam' %}" id="exam-form">
+    {% csrf_token %}
+    <input type="hidden" name="exam_type" id="exam-type-input" value="quick_test">
+    <input type="hidden" name="subject_id" id="subject-id-input" value="">
+    <input type="hidden" name="topic_id"   id="topic-id-input"   value="">
 
-<form method="post" action="{% url 'start_exam' %}">
-  {% csrf_token %}
+    <!-- Page title -->
+    <div style="padding: 28px 0 20px;">
+      <h1 style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;margin-bottom:4px;">Start Exam</h1>
+      <p style="font-size:.88rem;color:var(--gray-500);">Select a mode to begin.</p>
+    </div>
 
-  <!-- Exam Type -->
-  <fieldset>
-    <legend><strong>Exam Type</strong></legend>
+    <!-- Segmented control -->
+    <div class="seg-wrap">
+      <div class="seg-track">
+        <button type="button" class="seg-btn seg-btn--active" id="seg-quick_test"   onclick="setMode('quick_test')">Quick</button>
+        <button type="button" class="seg-btn"                 id="seg-timed_exam"   onclick="setMode('timed_exam')">Timed</button>
+        <button type="button" class="seg-btn"                 id="seg-practice_topic" onclick="setMode('practice_topic')">Topic</button>
+        <button type="button" class="seg-btn"                 id="seg-weakness_drill" onclick="setMode('weakness_drill')">Drill</button>
+      </div>
+    </div>
 
-    <label>
-      <input type="radio" name="exam_type" value="quick_test" checked>
-      <strong>Quick Test</strong> — 15 random questions, no time limit
-    </label><br>
+    <!-- Mode detail card — changes with selection -->
+    <div class="mode-detail-card" id="mode-card">
+      <div class="mode-detail-card__icon" id="mode-icon">
+        <!-- injected by JS -->
+      </div>
+      <div class="mode-detail-card__body">
+        <p class="mode-detail-card__name"  id="mode-name"></p>
+        <p class="mode-detail-card__desc"  id="mode-desc"></p>
+      </div>
+      <div class="mode-detail-card__meta" id="mode-meta"></div>
+    </div>
 
-    <label>
-      <input type="radio" name="exam_type" value="timed_exam">
-      <strong>Timed Exam</strong> — 40 questions, 60 minute countdown
-    </label><br>
+    <!-- Subject selector -->
+    <div style="margin-bottom:24px;">
+      <p class="lobby-sub-label">Subject <span id="subject-hint" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.78rem;">(optional)</span></p>
+      <div class="subject-pill-row" id="subject-pills">
+        <button type="button" class="subject-pill subject-pill--active"
+                data-value="" onclick="pickSubject(this)">All</button>
+        {% for subject in subjects %}
+        <button type="button" class="subject-pill"
+                data-value="{{ subject.id }}"
+                onclick="pickSubject(this)">{{ subject.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
 
-    <label>
-      <input type="radio" name="exam_type" value="practice_topic">
-      <strong>Practice by Topic</strong> — Pick a subject &amp; topic, see answers as you go
-    </label><br>
+    <!-- Topic selector (practice_topic only) -->
+    <div id="topic-section" style="display:none;margin-bottom:24px;">
+      <p class="lobby-sub-label">Topic</p>
+      <div class="subject-pill-row" id="topic-pills">
+        <button type="button" class="subject-pill subject-pill--active"
+                data-value="" onclick="pickTopic(this)">All topics</button>
+      </div>
+    </div>
 
-    <label>
-      <input type="radio" name="exam_type" value="weakness_drill">
-      <strong>Weakness Drill</strong> — Revisit questions you've previously got wrong
-    </label>
-  </fieldset>
+    <!-- Start button -->
+    <button type="submit" class="er-btn-primary" style="margin-top:4px;box-shadow:0 4px 20px rgba(5,150,105,.28);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      <span id="start-label">Start Quick Test</span>
+    </button>
 
-  <br>
+  </form>
+  {% endif %}
 
-  <!-- Subject — only the user's 4 selected subjects are shown -->
-  <fieldset id="subject-section">
-    <legend><strong>Subject</strong> <small>(optional for Quick Test &amp; Weakness Drill)</small></legend>
-    <select name="subject_id">
-      <option value="">— All my subjects —</option>
-      {% for subject in subjects %}
-        <option value="{{ subject.id }}">{{ subject.name }}</option>
-      {% endfor %}
-    </select>
-  </fieldset>
-
-  <br>
-
-  <!-- Topic (only for Practice by Topic) -->
-  <fieldset id="topic-section" style="display:none;">
-    <legend><strong>Topic</strong> <small>(required for Practice by Topic)</small></legend>
-    <select name="topic_id" id="topic-select">
-      <option value="">— Select a subject first —</option>
-    </select>
-  </fieldset>
-
-  <br>
-  <button type="submit">Start Exam &rarr;</button>
-</form>
-
-{% endif %}
-
-<hr>
-<a href="{% url 'exam_history' %}">View my past results</a>
+</div>
 
 {{ subjects_json|json_script:"subjects-data" }}
 <script>
-  const subjectData = JSON.parse(document.getElementById("subjects-data").textContent);
   const subjectTopics = {};
-  subjectData.forEach(s => { subjectTopics[s.id] = s.topics; });
+  JSON.parse(document.getElementById('subjects-data').textContent)
+    .forEach(s => { subjectTopics[s.id] = s.topics; });
 
-  const examTypeRadios = document.querySelectorAll('input[name="exam_type"]');
-  const topicSection   = document.getElementById("topic-section");
-  const subjectSelect  = document.querySelector('select[name="subject_id"]');
-  const topicSelect    = document.getElementById("topic-select");
+  const modes = {
+    quick_test: {
+      name:  'Quick Test',
+      desc:  '15 randomly selected questions with no time limit. Great for a warm-up.',
+      meta:  '15 questions · No timer',
+      label: 'Start Quick Test',
+      icon:  `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`,
+    },
+    timed_exam: {
+      name:  'Timed Exam',
+      desc:  'Full simulation with a 60-minute countdown. Mirrors real JAMB conditions.',
+      meta:  '40 questions · 60 min',
+      label: 'Start Timed Exam',
+      icon:  `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    },
+    practice_topic: {
+      name:  'Practice by Topic',
+      desc:  'Choose a subject and topic. Answers are revealed after each question.',
+      meta:  'All questions · Instant feedback',
+      label: 'Start Practice',
+      icon:  `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+    },
+    weakness_drill: {
+      name:  'Weakness Drill',
+      desc:  'Targets questions you have previously answered incorrectly.',
+      meta:  'Up to 20 questions · No timer',
+      label: 'Start Drill',
+      icon:  `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>`,
+    },
+  };
 
-  function toggleTopicSection() {
-    const selected = document.querySelector('input[name="exam_type"]:checked');
-    topicSection.style.display = selected && selected.value === "practice_topic" ? "" : "none";
+  let activeMode = 'quick_test';
+
+  function setMode(val) {
+    activeMode = val;
+    document.getElementById('exam-type-input').value = val;
+
+    // Update segmented control
+    document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('seg-btn--active'));
+    document.getElementById('seg-' + val).classList.add('seg-btn--active');
+
+    // Update detail card
+    const m = modes[val];
+    document.getElementById('mode-icon').innerHTML = m.icon;
+    document.getElementById('mode-name').textContent = m.name;
+    document.getElementById('mode-desc').textContent = m.desc;
+    document.getElementById('mode-meta').textContent = m.meta;
+    document.getElementById('start-label').textContent = m.label;
+
+    // Show topic section only for practice_topic
+    document.getElementById('topic-section').style.display =
+      val === 'practice_topic' ? '' : 'none';
+    document.getElementById('subject-hint').textContent =
+      val === 'practice_topic' ? '(required)' : '(optional)';
   }
 
-  function updateTopics() {
-    const subjectId = subjectSelect.value;
-    topicSelect.innerHTML = '<option value="">— All topics —</option>';
-    if (subjectId && subjectTopics[subjectId]) {
-      subjectTopics[subjectId].forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.textContent = t.name;
-        topicSelect.appendChild(opt);
+  function pickSubject(btn) {
+    document.querySelectorAll('#subject-pills .subject-pill')
+      .forEach(b => b.classList.remove('subject-pill--active'));
+    btn.classList.add('subject-pill--active');
+    document.getElementById('subject-id-input').value = btn.dataset.value;
+
+    // Rebuild topics
+    const sid = btn.dataset.value;
+    const tp  = document.getElementById('topic-pills');
+    tp.innerHTML = '<button type="button" class="subject-pill subject-pill--active" data-value="" onclick="pickTopic(this)">All topics</button>';
+    document.getElementById('topic-id-input').value = '';
+    if (sid && subjectTopics[sid]) {
+      subjectTopics[sid].forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'subject-pill';
+        b.dataset.value = t.id; b.textContent = t.name;
+        b.setAttribute('onclick', 'pickTopic(this)');
+        tp.appendChild(b);
       });
     }
   }
 
-  examTypeRadios.forEach(r => r.addEventListener("change", toggleTopicSection));
-  subjectSelect.addEventListener("change", updateTopics);
+  function pickTopic(btn) {
+    document.querySelectorAll('#topic-pills .subject-pill')
+      .forEach(b => b.classList.remove('subject-pill--active'));
+    btn.classList.add('subject-pill--active');
+    document.getElementById('topic-id-input').value = btn.dataset.value;
+  }
+
+  // Init
+  setMode('quick_test');
 </script>
 {% endblock %}
