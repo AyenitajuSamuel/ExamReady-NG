@@ -1,44 +1,68 @@
 {% extends "base.html" %}
-{% block title %}My Profile{% endblock %}
+{% load static %}
+{% block title %}Profile — JAMBReady{% endblock %}
+{% block tab_profile %}er-tabbar__item--active{% endblock %}
 
 {% block content %}
-<h1>{{ request.user.username }}'s Profile</h1>
+<div class="er-page">
 
-<section>
-  <h2>My JAMB Subjects</h2>
-  {% if profile.subjects.count > 0 %}
-    <ul>
-      {% for subject in profile.subjects.all %}
-        <li>{{ subject.name }}</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>You haven't selected your subjects yet.</p>
-  {% endif %}
-  <a href="{% url 'select_subjects' %}">
-    {% if profile.subjects.count > 0 %}Change subjects{% else %}Select subjects{% endif %}
-  </a>
-</section>
+  <!-- Avatar + name + bio-->
+  <div class="profile-hero">
+    <div class="profile-avatar">
+      {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="Avatar" class="profile-avatar__img">
+      {% else %}
+        <span class="profile-avatar__initials">{{ request.user.username|slice:":2"|upper }}</span>
+      {% endif %}
+    </div>
+    <div class="profile-hero__info">
+      <h1 class="profile-hero__name">{{ request.user.username }}</h1>
+      <p class="profile-hero__email">{{ request.user.email }}</p>
+    </div>
+  </div>
 
-<hr>
+  <!-- JAMB Subjects -->
+  <p class="er-section-title">My JAMB Subjects</p>
+  <div class="er-card" style="margin-bottom:16px;">
+    {% if profile.subjects.count > 0 %}
+      <div class="subject-chips">
+        {% for subject in profile.subjects.all %}
+          <span class="subject-chip">{{ subject.name }}</span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="font-size:.88rem;color:var(--gray-500);margin-bottom:10px;">You haven't selected your subjects yet.</p>
+    {% endif %}
+    <a href="{% url 'select_subjects' %}" class="profile-link-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      {% if profile.subjects.count > 0 %}Change subjects{% else %}Select subjects{% endif %}
+    </a>
+  </div>
 
-<section>
-  <h2>Edit Profile</h2>
-  {% if profile.avatar %}
-    <img src="{{ profile.avatar.url }}" alt="Avatar" width="100"><br><br>
-  {% endif %}
+  <!-- Edit profile -->
+  <p class="er-section-title">Edit Profile</p>
+  <div class="er-card" style="margin-bottom:16px;">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="profile-field">
+        <label class="profile-field__label">Avatar</label>
+        {{ form.avatar }}
+      </div>
+      <button type="submit" class="er-btn-primary" style="margin-top:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save Changes
+      </button>
+    </form>
+  </div>
 
-  <form method="post" enctype="multipart/form-data">
+  <!-- Log out -->
+  <form method="post" action="{% url 'logout' %}">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save Changes</button>
+    <button type="submit" class="profile-logout-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log Out
+    </button>
   </form>
-</section>
 
-<hr>
-
-<form method="post" action="/users/logout/">
-  {% csrf_token %}
-  <button type="submit">Log Out</button>
-</form>
+</div>
 {% endblock %}

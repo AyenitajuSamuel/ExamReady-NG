@@ -1,204 +1,163 @@
 {% extends "base.html" %}
-{% block title %}Home{% endblock %}
+{% load static %}
+{% block title %}Home — JAMBReady{% endblock %}
+{% block tab_home %}er-tabbar__item--active{% endblock %}
 
 {% block content %}
-
 {% if user.is_authenticated %}
 
-  <h1>Welcome back, {{ user.username }}!</h1>
+<div class="er-page">
 
-  <!-- Recommendations -->
-  {% if top_recs %}
-  <section>
-    <h2>Recommended for you</h2>
-    <style>
-      .rec-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-      .rec-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 1.1rem 1.1rem 0.9rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        background: #fff;
-        border-left: 4px solid #aaa;
-      }
-      .rec-card.kind-danger  { border-left-color: #d9534f; }
-      .rec-card.kind-warning { border-left-color: #f0ad4e; }
-      .rec-card.kind-success { border-left-color: #5cb85c; }
-      .rec-card.kind-info    { border-left-color: #5bc0de; }
-      .rec-card-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-      .rec-icon {
-        flex-shrink: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-      }
-      .kind-danger  .rec-icon { background: #fdf0ef; }
-      .kind-warning .rec-icon { background: #fef9ec; }
-      .kind-success .rec-icon { background: #edfaed; }
-      .kind-info    .rec-icon { background: #eff8fb; }
-      .rec-title {
-        font-weight: 600;
-        font-size: 0.92rem;
-        margin: 0;
-        line-height: 1.3;
-      }
-      .rec-body {
-        font-size: 0.85rem;
-        color: #555;
-        margin: 0;
-        line-height: 1.5;
-      }
-      .rec-cta {
-        display: inline-block;
-        margin-top: 0.2rem;
-        padding: 0.35rem 0.8rem;
-        border-radius: 5px;
-        font-size: 0.82rem;
-        font-weight: 500;
-        text-decoration: none;
-        color: #fff;
-        align-self: flex-start;
-      }
-      .kind-danger  .rec-cta { background: #d9534f; }
-      .kind-warning .rec-cta { background: #e09b3a; }
-      .kind-success .rec-cta { background: #4cae4c; }
-      .kind-info    .rec-cta { background: #31b0d5; }
-      .rec-cta:hover { opacity: 0.88; }
-    </style>
+  <!-- Greeting -->
+  <div class="home-greeting">
+    <h1>Hello, {{ user.username }}! </h1>
+    <p class="home-greeting__sub">Ready to crush your exams today?</p>
+  </div>
 
-    <div class="rec-grid">
-      {% for rec in top_recs %}
-        <div class="rec-card kind-{{ rec.kind }}">
-          <div class="rec-card-header">
-            <div class="rec-icon">
-              {% if rec.icon == "alert" %}⚠
-              {% elif rec.icon == "play" %}▶
-              {% elif rec.icon == "target" %}🎯
-              {% elif rec.icon == "book" %}📖
-              {% elif rec.icon == "repeat" %}↻
-              {% elif rec.icon == "clock" %}⏱
-              {% elif rec.icon == "calendar" %}📅
-              {% elif rec.icon == "star" %}★
-              {% elif rec.icon == "chart" %}📊
-              {% else %}💡
-              {% endif %}
-            </div>
-            <h2 class="rec-title">{{ rec.title }}</h2>
-          </div>
-          <p class="rec-body">{{ rec.body }}</p>
-          <a class="rec-cta" href="{{ rec.cta_url }}">{{ rec.cta_label }} →</a>
-        </div>
-      {% endfor %}
+  <!-- Overall readiness card -->
+  {% if total_exams > 0 %}
+  <div class="er-card readiness-card">
+    <div class="readiness-card__label">Overall Readiness</div>
+    <div class="readiness-card__score">{{ readiness_pct|default:"—" }}%</div>
+    <div class="readiness-card__meta">
+      <span class="readiness-card__delta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Keep practising
+      </span>
+      <span class="readiness-card__goal">Goal: 85% by exam day</span>
     </div>
-  </section>
-
-  <hr>
+    <div class="er-progress">
+      <div class="er-progress__bar" style="--pct: {{ readiness_pct|default:0 }}%;"></div>
+    </div>
+  </div>
   {% endif %}
 
-  <!-- Quick Stats -->
-  <section>
-    <h2>Your Stats</h2>
-    <p>Total exams completed: <strong>{{ total_exams }}</strong></p>
-    <p>Total passed: <strong>{{ total_passed }}</strong></p>
-    {% if total_exams > 0 %}
-      <p>Pass rate: <strong>{{ total_passed }} / {{ total_exams }}</strong></p>
-    {% endif %}
-  </section>
+  <!-- Primary CTA -->
+  <a href="{% url 'exam_lobby' %}" class="er-btn-primary">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+    Start Practice Session
+  </a>
 
-  <hr>
+  <!-- Recommendations / AI Insights -->
+  {% if top_recs %}
+  {% with top_recs.0 as first_rec %}
+  <div class="er-card insights-card">
+    <div class="insights-card__header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
+      AI Insights
+    </div>
+    <p class="insights-card__body">{{ first_rec.body }}</p>
+    <a href="{{ first_rec.cta_url }}" class="insights-card__action">
+      {{ first_rec.cta_label }}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+  {% endwith %}
 
-  <!-- Actions -->
-  <section>
-    <h2>What would you like to do?</h2>
-    <ul>
-      <li><a href="/exam/">Start an Exam</a> — Quick Test, Timed Exam, Practice by Topic, or Weakness Drill</li>
-      <li><a href="/exam/history/">View Exam History</a> — See all your past results</li>
-      <li><a href="/users/profile/">My Profile</a> — Update your bio and avatar</li>
-    </ul>
-  </section>
+  {% if top_recs|length > 1 %}
+  <p class="er-section-title" style="margin-top:20px;">More suggestions</p>
+  <div class="rec-list">
+    {% for rec in top_recs %}
+      {% if not forloop.first %}
+      <a href="{{ rec.cta_url }}" class="rec-item rec-item--{{ rec.kind }}">
+        <div class="rec-item__icon rec-item__icon--{{ rec.kind }}">
+          {% if rec.icon == "alert" %}⚠️
+          {% elif rec.icon == "play" %}▶️
+          {% elif rec.icon == "target" %}🎯
+          {% elif rec.icon == "book" %}📖
+          {% elif rec.icon == "repeat" %}🔁
+          {% elif rec.icon == "clock" %}⏱️
+          {% elif rec.icon == "calendar" %}📅
+          {% elif rec.icon == "star" %}⭐
+          {% elif rec.icon == "chart" %}📊
+          {% else %}💡
+          {% endif %}
+        </div>
+        <div class="rec-item__content">
+          <div class="rec-item__title">{{ rec.title }}</div>
+          <div class="rec-item__body">{{ rec.body }}</div>
+        </div>
+        <span class="rec-item__cta">{{ rec.cta_label }} →</span>
+      </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
 
-  <hr>
+  <!-- Quick stats -->
+  {% if total_exams > 0 %}
+  <p class="er-section-title">Your Stats</p>
+  <div class="stats-row">
+    <div class="er-card stat-card">
+      <div class="stat-card__label">Exams Done</div>
+      <div class="stat-card__value">{{ total_exams }}</div>
+      <div class="stat-card__sub">{{ total_passed }} passed</div>
+    </div>
+    <div class="er-card stat-card">
+      <div class="stat-card__label">Pass Rate</div>
+      <div class="stat-card__value">
+        {% if total_exams > 0 %}{% widthratio total_passed total_exams 100 %}%{% else %}—{% endif %}
+      </div>
+      <div class="stat-card__sub">out of {{ total_exams }} taken</div>
+    </div>
+  </div>
+  {% endif %}
 
-  <!-- Recent Results -->
+  <!-- Recent results -->
   {% if recent_sessions %}
-    <section>
-      <h2>Recent Results</h2>
-      <table border="1" cellpadding="6">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Subject</th>
-            <th>Score</th>
-            <th>Result</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for session in recent_sessions %}
-            <tr>
-              <td>{{ session.started_at|date:"d M Y" }}</td>
-              <td>{{ session.get_exam_type_display }}</td>
-              <td>{{ session.subject|default:"—" }}</td>
-              <td>{{ session.score_percent }}%</td>
-              <td>{% if session.passed %}✓ Pass{% else %}✗ Fail{% endif %}</td>
-              <td><a href="/exam/{{ session.id }}/complete/">Review</a></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <p><a href="/exam/history/">View all results →</a></p>
-    </section>
+  <p class="er-section-title">Recent Results</p>
+  <div class="results-list">
+    {% for session in recent_sessions %}
+    <a href="/exam/{{ session.id }}/complete/" class="result-row">
+      <div class="result-row__info">
+        <div class="result-row__type">{{ session.get_exam_type_display }}</div>
+        <div class="result-row__meta">
+          {{ session.started_at|date:"d M Y" }}
+          {% if session.subject %} · {{ session.subject }}{% endif %}
+        </div>
+      </div>
+      <div class="result-row__score {% if session.passed %}result-row__score--pass{% else %}result-row__score--fail{% endif %}">
+        {{ session.score_percent }}%
+      </div>
+      <span class="er-pill {% if session.passed %}er-pill--pass{% else %}er-pill--fail{% endif %}">
+        {% if session.passed %}Pass{% else %}Fail{% endif %}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  <a href="{% url 'exam_history' %}" style="display:block;text-align:center;font-size:.85rem;font-weight:600;color:var(--green-500);margin-bottom:16px;">
+    View all results →
+  </a>
   {% else %}
-    <p>You haven't completed any exams yet. <a href="/exam/">Start one now →</a></p>
+  <div style="text-align:center;padding:32px 0;color:var(--gray-500);font-size:.88rem;">
+    No exams yet.
+    <a href="{% url 'exam_lobby' %}" style="color:var(--green-500);font-weight:600;"> Start one now →</a>
+  </div>
   {% endif %}
 
-  {% if subjects %}
-    <hr>
-    <section>
-      <h2>Available Subjects</h2>
-      <ul>
-        {% for subject in subjects %}
-          <li>{{ subject.name }}</li>
-        {% endfor %}
-      </ul>
-    </section>
-  {% endif %}
+</div>
 
 {% else %}
-
-  <!-- Guest landing -->
-  <h1>Welcome to ExamReady</h1>
-  <p>Prepare smarter for your exams with past questions, timed practice, and personalised drills.</p>
-  <p>
-    <a href="/users/register/">Create an account</a>
-    &nbsp;|&nbsp;
-    <a href="/users/login/">Log in</a>
-  </p>
-  <hr>
-  <h2>What you can do</h2>
-  <ul>
-    <li><strong>Quick Test</strong> — 15 random questions to warm up</li>
-    <li><strong>Timed Exam</strong> — Full exam simulation with a countdown timer</li>
-    <li><strong>Practice by Topic</strong> — Focus on a specific subject and topic</li>
-    <li><strong>Weakness Drill</strong> — Revisit questions you've previously got wrong</li>
-  </ul>
-
+<!-- Guest landing -->
+<div class="er-page">
+  <div class="home-greeting" style="padding-top:40px;text-align:center;">
+    <h1 style="font-size:2rem;">Welcome to<br>JAMBReady</h1>
+    <p class="home-greeting__sub" style="margin-top:10px;">Prepare smarter for JAMB with targeted practice and AI-powered insights.</p>
+  </div>
+  <a href="/users/register/" class="er-btn-primary">Create a free account</a>
+  <a href="/users/login/" class="er-btn-secondary">Log in</a>
+  <div class="er-card" style="margin-top:8px;">
+    <p class="er-section-title" style="margin-bottom:14px;">What you get</p>
+    <ul style="display:flex;flex-direction:column;gap:10px;">
+      {% for item in exam_type_list %}
+      <li style="display:flex;align-items:center;gap:10px;font-size:.88rem;">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--green-500);flex-shrink:0;"></span>
+        {{ item }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 {% endif %}
-
 {% endblock %}

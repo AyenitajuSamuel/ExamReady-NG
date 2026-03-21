@@ -1,74 +1,150 @@
 {% extends "base.html" %}
-{% block title %}Question {{ exam_q.order }} of {{ total }}{% endblock %}
+{% load static %}
+{% block title %}Question {{ exam_q.order }} of {{ total }} — ExamReady{% endblock %}
+{% block tab_exams %}er-tabbar__item--active{% endblock %}
+
+{% block topbar %}
+<header class="exam-topbar">
+  <div class="exam-topbar__row1">
+
+    <!-- Brand -->
+    <div class="exam-topbar__brand">
+      <span class="exam-topbar__brand-name">ExamReady</span>
+      <span class="exam-topbar__brand-sub">{{ session.get_exam_type_display }}</span>
+    </div>
+
+    <!-- Progress -->
+    <div class="exam-topbar__progress-label">
+      <div class="exam-topbar__progress-sub">Progress</div>
+      <div class="exam-topbar__progress-val">Question {{ exam_q.order }} of {{ total }}</div>
+    </div>
+
+    <!-- Timer (timed exam only) / Submit button -->
+    {% if session.exam_type == "timed_exam" %}
+    <div class="exam-topbar__timer" id="timer-display">
+      <div class="exam-topbar__timer-unit">
+        <span class="exam-topbar__timer-val" id="t-hrs">00</span>
+        <span class="exam-topbar__timer-lbl">HRS</span>
+      </div>
+      <span class="exam-topbar__timer-sep">:</span>
+      <div class="exam-topbar__timer-unit">
+        <span class="exam-topbar__timer-val" id="t-min">00</span>
+        <span class="exam-topbar__timer-lbl">MIN</span>
+      </div>
+      <span class="exam-topbar__timer-sep">:</span>
+      <div class="exam-topbar__timer-unit">
+        <span class="exam-topbar__timer-val" id="t-sec">00</span>
+        <span class="exam-topbar__timer-lbl">SEC</span>
+      </div>
+    </div>
+    {{ session.started_at|date:"c"|json_script:"started-at" }}
+    {{ session.duration_seconds|json_script:"duration-seconds" }}
+    {% else %}
+    <form method="post" action="{% url 'submit_answer' session.id %}" id="submit-form" style="display:none;"></form>
+    <button form="main-form" type="submit"
+      style="background:var(--blue-500);color:#fff;border-radius:8px;padding:8px 18px;font-family:var(--font-display);font-weight:600;font-size:.88rem;box-shadow:0 2px 8px rgba(26,95,212,.3);">
+      Submit
+    </button>
+    {% endif %}
+
+  </div>
+
+  <!-- Progress bar -->
+  <div class="exam-topbar__row2">
+    <div class="exam-progress-bar">
+      <div class="exam-progress-bar__fill" style="--pct: {{ progress }}%;"></div>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block tabbar %}{% endblock %}
 
 {% block content %}
+<div class="er-page" style="padding-bottom:90px;">
 
-<!-- Header -->
-<p>
-  <strong>{{ session.get_exam_type_display }}</strong>
-  {% if session.subject %} &mdash; {{ session.subject }}{% endif %}
-</p>
-<p>Question {{ exam_q.order }} of {{ total }}</p>
-<progress value="{{ progress }}" max="100"></progress> {{ progress }}%
-
-<!-- Countdown (Timed Exam only) -->
-{% if session.exam_type == "timed_exam" %}
-  <p>Time remaining: <strong id="countdown"></strong></p>
-  {{ session.started_at|date:"c"|json_script:"started-at" }}
-  {{ session.duration_seconds|json_script:"duration-seconds" }}
-  <script>
-    (function () {
-      const startedAt  = new Date(JSON.parse(document.getElementById("started-at").textContent));
-      const durationMs = JSON.parse(document.getElementById("duration-seconds").textContent) * 1000;
-      const endsAt     = new Date(startedAt.getTime() + durationMs);
-
-      function tick() {
-        const remaining = Math.max(0, endsAt - Date.now());
-        const mins = String(Math.floor(remaining / 60000)).padStart(2, "0");
-        const secs = String(Math.floor((remaining % 60000) / 1000)).padStart(2, "0");
-        document.getElementById("countdown").textContent = mins + ":" + secs;
-        if (remaining === 0) {
-          document.getElementById("abandon-form").submit();
-        }
-      }
-      tick();
-      setInterval(tick, 1000);
-    })();
-  </script>
-{% endif %}
-
-<hr>
-
-<!-- Question -->
-<h2>{{ exam_q.question.question_text }}</h2>
-
-<!-- Answer form -->
-<form method="post" action="{% url 'submit_answer' session.id %}">
-  {% csrf_token %}
-  <input type="hidden" name="exam_question_id" value="{{ exam_q.id }}">
-
-  {% for choice in choices %}
-    <div>
-      <label>
-        <input type="radio" name="choice_id" value="{{ choice.id }}" required>
-        {{ choice.option_text }}
-      </label>
+  <!-- Question card -->
+  <div class="er-card question-card">
+    <div class="question-card__meta">
+      <span class="question-card__num">Question {{ exam_q.order }}</span>
+      <span class="question-card__type">· Multiple Choice</span>
     </div>
-  {% endfor %}
+    <p class="question-card__text">{{ exam_q.question.question_text }}</p>
+  </div>
 
-  <br>
-  <button type="submit">
-    {% if reveal_now %}Submit &amp; See Answer{% else %}Submit{% endif %}
+  <!-- Answer choices -->
+  <form method="post" action="{% url 'submit_answer' session.id %}" id="main-form">
+    {% csrf_token %}
+    <input type="hidden" name="exam_question_id" value="{{ exam_q.id }}">
+
+    <div class="choices-list">
+      {% for choice in choices %}
+      <label class="choice-item" id="choice-{{ forloop.counter }}">
+        <input type="radio" name="choice_id" value="{{ choice.id }}"
+               onchange="selectChoice(this, 'choice-{{ forloop.counter }}')">
+        <div class="choice-radio"></div>
+        <div class="choice-letter">{% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% elif forloop.counter == 4 %}D{% else %}E{% endif %}</div>
+        <span class="choice-text">{{ choice.option_text }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </form>
+
+</div>
+
+<!-- Bottom action bar -->
+<div class="exam-bottombar">
+  <form method="post" action="{% url 'abandon_exam' session.id %}"
+        onsubmit="return confirm('Abandon this exam?');">
+    {% csrf_token %}
+    <button type="submit" class="exam-btn-prev">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Quit
+    </button>
+  </form>
+
+  <button type="submit" form="main-form" class="exam-btn-next">
+    {% if reveal_now %}See Answer{% else %}Next{% endif %}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
   </button>
-</form>
+</div>
 
-<hr>
+<script>
+  // Highlight selected choice
+  function selectChoice(radio, labelId) {
+    document.querySelectorAll('.choice-item').forEach(el => el.classList.remove('choice-item--selected'));
+    document.getElementById(labelId).classList.add('choice-item--selected');
+  }
 
-<!-- Abandon -->
-<form id="abandon-form" method="post" action="{% url 'abandon_exam' session.id %}"
-      onsubmit="return confirm('Are you sure you want to abandon this exam?');">
-  {% csrf_token %}
-  <button type="submit">Abandon Exam</button>
-</form>
+  // Countdown timer
+  {% if session.exam_type == "timed_exam" %}
+  (function() {
+    const startedAt  = new Date(JSON.parse(document.getElementById('started-at').textContent));
+    const durationMs = JSON.parse(document.getElementById('duration-seconds').textContent) * 1000;
+    const endsAt     = new Date(startedAt.getTime() + durationMs);
 
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tick() {
+      const rem  = Math.max(0, endsAt - Date.now());
+      const hrs  = Math.floor(rem / 3600000);
+      const mins = Math.floor((rem % 3600000) / 60000);
+      const secs = Math.floor((rem % 60000) / 1000);
+      document.getElementById('t-hrs').textContent = pad(hrs);
+      document.getElementById('t-min').textContent = pad(mins);
+      document.getElementById('t-sec').textContent = pad(secs);
+
+      // Warn when under 5 minutes
+      if (rem < 300000) {
+        document.getElementById('timer-display').style.color = 'var(--red-500)';
+      }
+      if (rem === 0) {
+        document.getElementById('abandon-form').submit();
+      }
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+  {% endif %}
+</script>
 {% endblock %}
