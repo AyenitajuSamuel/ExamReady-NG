@@ -111,13 +111,11 @@
 </div>
 
 <script>
-  // Animate the score ring on load
   document.addEventListener('DOMContentLoaded', function () {
     const ring = document.getElementById('score-ring');
     const pct  = {{ session.score_percent|default:0|floatformat:0 }};
     const circ = 408.4;
     const offset = circ * (1 - pct / 100);
-    // Start fully hidden, animate to correct value
     ring.style.strokeDashoffset = circ;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

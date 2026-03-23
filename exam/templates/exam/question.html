@@ -55,15 +55,6 @@
 {% block content %}
 <div class="er-page" style="padding-bottom:90px;">
 
-  <!-- Django messages (e.g. "please select an answer") -->
-  {% if messages %}
-    {% for message in messages %}
-    <div class="er-message er-message--{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}" style="margin-bottom:12px;">
-      {{ message }}
-    </div>
-    {% endfor %}
-  {% endif %}
-
   <!-- Question card -->
   <div class="er-card question-card">
     <div class="question-card__meta">
@@ -94,8 +85,6 @@
   </form>
 
 </div>
-
-<!-- Bottom action bar: Quit | ← Prev | Next/Submit → -->
 <div class="exam-bottombar">
 
   <!-- Quit -->

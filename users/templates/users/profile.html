@@ -6,7 +6,6 @@
 {% block content %}
 <div class="er-page">
 
-  <!-- Avatar + name + bio-->
   <div class="profile-hero">
     <div class="profile-avatar">
       {% if profile.avatar %}
@@ -21,7 +20,6 @@
     </div>
   </div>
 
-  <!-- JAMB Subjects -->
   <p class="er-section-title">My JAMB Subjects</p>
   <div class="er-card" style="margin-bottom:16px;">
     {% if profile.subjects.count > 0 %}
@@ -39,7 +37,6 @@
     </a>
   </div>
 
-  <!-- Edit profile -->
   <p class="er-section-title">Edit Profile</p>
   <div class="er-card" style="margin-bottom:16px;">
     <form method="post" enctype="multipart/form-data">
@@ -55,7 +52,6 @@
     </form>
   </div>
 
-  <!-- Log out -->
   <form method="post" action="{% url 'logout' %}">
     {% csrf_token %}
     <button type="submit" class="profile-logout-btn">
